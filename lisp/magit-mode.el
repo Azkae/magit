@@ -1014,6 +1014,89 @@ window."
 
 (defvar magit-inhibit-refresh nil)
 
+(defvar magit--prefill-commands
+  '(("rev-parse" "--show-cdup")
+    ("rev-parse" "--show-toplevel")
+    ("config" "--list" "-z")
+    ("update-index" "--refresh")
+    ("rev-parse" "--verify" "HEAD")
+    ("symbolic-ref" "--short" "HEAD")
+    ("log" "--no-walk" "--format=%h" "%s" "HEAD^{commit}" "--")
+    ("rev-parse" "--verify" "--abbrev-ref" "main@{upstream}")
+    ("log" "--no-walk" "--format=%s" "origin/main^{commit}" "--")
+    ("describe" "--long" "--tags")
+    ("describe" "--contains" "HEAD")
+    ("rev-parse" "--git-dir")
+    ("config" "--local" "-z" "--get-all" "--include" "status.showUntrackedFiles")
+    ("status" "-z" "--porcelain" "--untracked-files=normal" "--")
+    ("diff" "--ita-visible-in-index" "--no-ext-diff" "--no-prefix" "--")
+    ("rev-parse" "--is-bare-repository")
+    ("diff" "--ita-visible-in-index" "--cached" "--no-ext-diff" "--no-prefix" "--")
+    ("rev-parse" "--verify" "refs/stash")
+    ("reflog" "--format=%gd%x00%aN%x00%at%x00%gs" "refs/stash")
+    ("rev-parse" "--short" "HEAD")
+    ("rev-parse" "--short" "HEAD~")
+    ("(merge-base --is-ancestor HEAD origin/main)")
+    ("rev-parse" "--verify" "HEAD~10")
+    ("log" "--format=%h%x0c%D%x0c%x0c%aN%x0c%at%x0c%s" "--decorate=full" "-n10" "--use-mailmap" "--no-prefix" "--")
+    ("rev-parse" "--verify" "refs/tags/main")
+    ("rev-parse" "--verify" "refs/tags/origin/main")
+    ("rev-parse" "--verify" "refs/tags/origin/HEAD")
+    ("symbolic-ref" "refs/remotes/origin/HEAD")
+    ("log" "--format=%h%x0c%D%x0c%x0c%aN%x0c%at%x0c%s" "--decorate=full" "-n256" "--use-mailmap" "--no-prefix" "..@{upstream}" "--")))
+
+(setq magit--prefill-simple-commands
+  '(("rev-parse" "--short" "HEAD")
+    ("rev-parse" "--short" "HEAD~")))
+
+;; (defun magit--prefill-caches ()
+;;   (when magit--refresh-cache
+;;     (dolist (args magit--prefill-simple-commands)
+;;       (let* ((command (mapconcat (lambda (arg) (shell-quote-argument arg))
+;;                                  (cons "git" (magit-process-git-arguments args)) " "))
+;;              (value (shell-command-to-string command))
+;;              (key (cons "/Users/romain.ouabdelkader/.emacs.d/straight/repos/magit/" args)))
+;;         (message "pushing in cache: %s %s" key value)
+;;         (push (cons key value)
+;;               (cdr magit--refresh-cache))))))
+
+(defun magit--prefill-caches ()
+  (when magit--refresh-cache
+    (let ((processes '()))
+      ;; Start all processes
+      (dolist (args magit--prefill-simple-commands)
+        (let* ((name (format " *magit-prefill-%s*" (mapconcat #'identity args "-")))
+               (buffer (generate-new-buffer name))
+               (key (cons "/Users/romain.ouabdelkader/.emacs.d/straight/repos/magit/" args))
+               (proc (make-process
+                      :name (format "magit-prefill-%s" (mapconcat #'identity args "-"))
+                      :buffer buffer
+                      :command (cons "git" (magit-process-git-arguments args))
+                      :sentinel (lambda (proc _event)
+                                  (when (eq (process-status proc) 'exit)
+                                    (when (= (process-exit-status proc) 0)
+                                      (let ((value (with-current-buffer (process-buffer proc)
+                                                     (buffer-string))))
+                                        (message "pushing in cache: %s %s" key value)
+                                        (push (cons key value)
+                                              (cdr magit--refresh-cache)))))))))
+          (push proc processes)))
+
+      ;; Wait for all processes to finish
+      (while processes
+        (let ((remaining '()))
+          (dolist (proc processes)
+            (if (process-live-p proc)
+                (push proc remaining)))
+          (setq processes remaining)
+          (when processes
+            (sleep-for 0.02))))
+
+      ;; Clean up buffers
+      (dolist (buf (buffer-list))
+        (when (string-match " \\*magit-prefill-" (buffer-name buf))
+          (kill-buffer buf))))))
+
 (defun magit-refresh ()
   "Refresh some buffers belonging to the current repository.
 
@@ -1029,6 +1112,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                                         (list (cons 0 0)))))
           (when magit-refresh-verbose
             (message "Refreshing magit..."))
+          (magit--prefill-caches)
           (magit-run-hook-with-benchmark 'magit-pre-refresh-hook)
           (cond ((derived-mode-p 'magit-mode)
                  (magit-refresh-buffer))
