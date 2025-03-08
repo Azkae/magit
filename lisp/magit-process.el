@@ -460,6 +460,7 @@ DESTINATION specifies how to handle the output, like for
 `call-process', except that file handlers are supported.
 Enable Cygwin's \"noglob\" option during the call and
 ensure unix eol conversion."
+  (message "Calling git: %s %s" default-directory args)
   (apply #'magit-process-file
          (magit-git-executable)
          nil destination nil
