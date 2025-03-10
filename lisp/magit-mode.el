@@ -1047,55 +1047,96 @@ window."
 
 (setq magit--prefill-simple-commands
   '(("rev-parse" "--short" "HEAD")
-    ("rev-parse" "--short" "HEAD~")))
+    ("rev-parse" "--short" "HEAD~")
+    ("rev-parse" "--short" "HEAD~2")
+    ("rev-parse" "--short" "HEAD~3")
+    ("rev-parse" "--short" "HEAD~4")
+    ("rev-parse" "--short" "HEAD~5")
+    ("rev-parse" "--short" "HEAD~6")
+    ("rev-parse" "--short" "HEAD~7")
+    ("rev-parse" "--short" "HEAD~8")
+    ("rev-parse" "--short" "HEAD~9")
+    ("rev-parse" "--short" "HEAD~10")
+    ("rev-parse" "--short" "HEAD~11")))
 
 ;; (defun magit--prefill-caches ()
 ;;   (when magit--refresh-cache
-;;     (dolist (args magit--prefill-simple-commands)
-;;       (let* ((command (mapconcat (lambda (arg) (shell-quote-argument arg))
-;;                                  (cons "git" (magit-process-git-arguments args)) " "))
-;;              (value (shell-command-to-string command))
-;;              (key (cons "/Users/romain.ouabdelkader/.emacs.d/straight/repos/magit/" args)))
-;;         (message "pushing in cache: %s %s" key value)
-;;         (push (cons key value)
-;;               (cdr magit--refresh-cache))))))
+;;     (message "-- Prefill cache start")
+;;     (let ((threads '())
+;;           (time (current-time)))
+;;       (dolist (args magit--prefill-simple-commands)
+;;         (let* ((command (mapconcat (lambda (arg) (shell-quote-argument arg))
+;;                                    (cons magit-git-executable (magit-process-git-arguments args)) " "))
+;;                (thread (make-thread (lambda ()
+;;                                       (message "before %s" command)
+;;                                       (let ((r (shell-command-to-string command)))
+;;                                                  (message "after %s" command)
+;;                                                  r))))
+;;                (key (cons (magit-toplevel) args)))
+;;           (push (cons key thread) threads)
+;;           ))
+;;       (dolist (key-thread threads)
+;;         (let* ((key (car key-thread))
+;;                (value (thread-join (cdr key-thread))))
+;;           (message "pushing in cache: %s %s" key value)
+;;           (push (cons key value)
+;;                 (cdr magit--refresh-cache))))
+;;       (message "cache time: %.06f" (float-time (time-since time))))
+;;     (message "-- Prefill cache end")))
 
 (defun magit--prefill-caches ()
+  "Prefill the Magit cache with common Git command results."
   (when magit--refresh-cache
-    (let ((processes '()))
+    (let ((processes '())
+          (time (current-time))
+          (repo-path (magit-toplevel)))
       ;; Start all processes
-      (dolist (args magit--prefill-simple-commands)
+      (dolist (args magit--prefill-commands)
         (let* ((name (format " *magit-prefill-%s*" (mapconcat #'identity args "-")))
                (buffer (generate-new-buffer name))
-               (key (cons "/Users/romain.ouabdelkader/.emacs.d/straight/repos/magit/" args))
+               (key (cons repo-path args))
                (proc (make-process
                       :name (format "magit-prefill-%s" (mapconcat #'identity args "-"))
                       :buffer buffer
                       :command (cons "git" (magit-process-git-arguments args))
                       :sentinel (lambda (proc _event)
                                   (when (eq (process-status proc) 'exit)
-                                    (when (= (process-exit-status proc) 0)
-                                      (let ((value (with-current-buffer (process-buffer proc)
-                                                     (buffer-string))))
-                                        (message "pushing in cache: %s %s" key value)
-                                        (push (cons key value)
-                                              (cdr magit--refresh-cache)))))))))
-          (push proc processes)))
-
-      ;; Wait for all processes to finish
-      (while processes
-        (let ((remaining '()))
-          (dolist (proc processes)
-            (if (process-live-p proc)
-                (push proc remaining)))
-          (setq processes remaining)
-          (when processes
-            (sleep-for 0.02))))
-
-      ;; Clean up buffers
-      (dolist (buf (buffer-list))
-        (when (string-match " \\*magit-prefill-" (buffer-name buf))
-          (kill-buffer buf))))))
+                                    (let ((buf (process-buffer proc)))
+                                      (when (buffer-live-p buf)
+                                        (when (= (process-exit-status proc) 0)
+                                          (condition-case nil
+                                              (let ((value (with-current-buffer buf
+                                                             (buffer-string))))
+                                                (push (cons key value)
+                                                      (cdr magit--refresh-cache)))
+                                            (error nil)))
+                                        (kill-buffer buf))))))))
+          (push (cons proc buffer) processes)))
+      
+      ;; Wait for processes with a timeout
+      (let ((timeout-seconds 5)
+            (start-time (current-time)))
+        (while (and processes
+                    (< (float-time (time-since start-time)) timeout-seconds))
+          (let ((remaining '()))
+            (dolist (proc-buf processes)
+              (let ((proc (car proc-buf)))
+                (if (process-live-p proc)
+                    (push proc-buf remaining))))
+            (setq processes remaining)
+            (when processes
+              (sleep-for 0.02))))
+        
+        ;; Kill any remaining processes and buffers
+        (dolist (proc-buf processes)
+          (let ((proc (car proc-buf))
+                (buf (cdr proc-buf)))
+            (when (process-live-p proc)
+              (delete-process proc))
+            (when (buffer-live-p buf)
+              (kill-buffer buf)))))
+      (message "cache time: %.06f" (float-time (time-since time)))
+    )))
 
 (defun magit-refresh ()
   "Refresh some buffers belonging to the current repository.
