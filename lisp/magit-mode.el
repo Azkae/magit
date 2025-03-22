@@ -1114,6 +1114,8 @@ window."
               (proc (make-process
                      :name (format "magit-prefill:%s:%s" index (mapconcat #'identity args "-"))
                      :buffer buffer
+                     :noquery t
+                     :connection-type 'pipe
                      :command (cons magit-git-executable (magit-process-git-arguments args))
                      :sentinel (lambda (proc _event)
                                  (magit--prefill-sentinel proc key mode)))))
