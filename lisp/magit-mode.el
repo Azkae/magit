@@ -1045,9 +1045,10 @@ window."
 ;;     ("symbolic-ref" "refs/remotes/origin/HEAD")
 ;;     ("log" "--format=%h%x0c%D%x0c%x0c%aN%x0c%at%x0c%s" "--decorate=full" "-n256" "--use-mailmap" "--no-prefix" "..@{upstream}" "--")))
 
+
 (setq magit--prefill-commands
-  '((("rev-parse" "--show-toplevel") . string)
-    (("rev-parse" "--show-cdup") . string)
+  '(;; (("rev-parse" "--show-toplevel") . string)
+    ;; (("rev-parse" "--show-cdup") . string)
     (("symbolic-ref" "--short" "HEAD") . string)
     ;; (("log" "--no-walk" "--format=%h" "%s" "HEAD^{commit}" "--") . string)
     (("rev-parse" "--verify" "--abbrev-ref" "main@{upstream}") . string)
@@ -1086,8 +1087,9 @@ window."
                           (unless (bobp)
                             (goto-char (point-min))
                             (buffer-substring-no-properties (point) (line-end-position)))))))
+              ;; (message "Prefill: adding cache %s to %s (%s)" value key mode)
               (push (cons key value)
-                      (cdr magit--refresh-cache))
+                    (cdr magit--refresh-cache))
               ;; (when (or (eq mode 'string-p) value)
               ;;   ;; (message "Prefill: adding cache %s to %s (%s)" value key mode)
               ;;   (push (cons key value)
@@ -1125,7 +1127,7 @@ window."
          (push (cons proc buffer) processes)))
 
       ;; (message "waiting.. (elapsed time during process creation: %s)" (float-time (time-since tmp-start)))
-      (sit-for 0.05)
+      (sit-for 0.02)
       (dolist (proc-buf processes)
         (let ((proc (car proc-buf))
               (buf (cdr proc-buf)))
