@@ -1121,6 +1121,8 @@ window."
                                  (magit--prefill-sentinel proc key mode)))))
          (push (cons proc buffer) processes)))
 
+      ;; (message "waiting.. (elapsed time during process creation: %s)" (float-time (time-since tmp-start)))
+      (sit-for 0.05)
       (dolist (proc-buf processes)
         (let ((proc (car proc-buf))
               (buf (cdr proc-buf)))
