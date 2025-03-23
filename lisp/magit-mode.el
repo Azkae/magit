@@ -1053,7 +1053,7 @@ window."
 (defun magit--prefill-sentinel (proc key)
   (when (eq (process-status proc) 'exit)
     (let ((buf (process-buffer proc)))
-      (when (buffer-live-p buf)
+      (when (and (buffer-live-p buf) magit--refresh-cache)
         (let ((value
                (with-current-buffer buf
                  (and (= (process-exit-status proc) 0)
@@ -1129,7 +1129,6 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                                   (magit-get-mode-buffer 'magit-status-mode))))
             (with-current-buffer buffer
               (magit-refresh-buffer)))
-          ;; (message "Cache end of refresh: %s" magit--refresh-cache)
           (magit-run-hook-with-benchmark 'magit-post-refresh-hook)
           (when magit-refresh-verbose
             (let* ((c (caar magit--refresh-cache))
@@ -1200,7 +1199,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
         (run-hooks 'magit-refresh-buffer-hook)
         (magit-section-update-highlight)
         (set-buffer-modified-p nil))
-      (when magit-refresh-verbose
+      (when (or magit-refresh-verbose t)
         (message "Refreshing buffer `%s'...done (%.3fs)" (buffer-name)
                  (float-time (time-since magit-refresh-start-time)))))))
 
