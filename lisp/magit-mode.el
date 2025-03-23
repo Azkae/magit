@@ -1014,6 +1014,11 @@ window."
 
 (defvar magit-inhibit-refresh nil)
 
+(defcustom magit-prefill t
+  "Prefill caches in parallel before refresh"
+  :group 'magit-refresh
+  :type 'boolean)
+
 (defun magit--prefill-commands-first-step ()
   '(("symbolic-ref" "--short" "HEAD")
     ("describe" "--long" "--tags")
@@ -1084,7 +1089,7 @@ window."
               (process-environment (magit-process-environment))
               (default-process-coding-system (magit--process-coding-system))
               (proc (make-process
-                     :name (format "magit-prefill:%s:%s" index (mapconcat #'identity args "-"))
+                     :name (format "magit-prefill:%s:%s" index (mapconcat #'identity args " "))
                      :buffer buffer
                      :noquery t
                      :connection-type 'pipe
@@ -1118,7 +1123,8 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                                         (list (cons 0 0)))))
           (when magit-refresh-verbose
             (message "Refreshing magit..."))
-          (magit--prefill-caches)
+          (when magit-prefill
+            (magit--prefill-caches))
           (magit-run-hook-with-benchmark 'magit-pre-refresh-hook)
           (cond ((derived-mode-p 'magit-mode)
                  (magit-refresh-buffer))
