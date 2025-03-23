@@ -1131,7 +1131,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
               (magit-refresh-buffer)))
           ;; (message "Cache end of refresh: %s" magit--refresh-cache)
           (magit-run-hook-with-benchmark 'magit-post-refresh-hook)
-          (when (or magit-refresh-verbose t)
+          (when magit-refresh-verbose
             (let* ((c (caar magit--refresh-cache))
                    (a (+ c (cdar magit--refresh-cache))))
               (message "Refreshing magit...done (%.3fs, cached %s/%s (%.0f%%))"
