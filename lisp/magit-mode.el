@@ -1102,9 +1102,21 @@ window."
     ("rev-parse" "--verify" "refs/tags/fork/main")
     ("rev-parse" "--verify" "fork/feature/prefetch2")))
 
+(setq magit--prefill-commands-first-step
+      '(("symbolic-ref" "--short" "HEAD")
+        ("describe" "--long" "--tags")
+        ("describe" "--contains" "HEAD")
+        ("rev-parse" "--git-dir")
+        ("rev-parse" "--is-bare-repository")
+        ("rev-parse" "--short" "HEAD")
+        ("rev-parse" "--short" "HEAD~")
+        ("describe" "--contains" "HEAD")
+        ("rev-parse" "--verify" "HEAD")
+        ("rev-parse" "--verify" "refs/stash")
+        ("rev-parse" "--verify" "HEAD~10")))
 
 ;; TODO: split in two steps
-(defun magit--prefill-commands ()
+(defun magit--prefill-commands-second-step ()
   (let* ((branch (magit-get-current-branch))
          (main (magit-main-branch))
          (push-main (magit-get-push-branch main))
@@ -1113,28 +1125,14 @@ window."
          (push-remote (magit-get-push-remote branch))
          (primary-remote (magit-primary-remote)))
     (cl-remove-duplicates
-     `(;; ("rev-parse" "--show-toplevel")
-       ;; ("rev-parse" "--show-cdup")
-       ("symbolic-ref" "--short" "HEAD")
-       ;; ("log" "--no-walk" "--format=%h" "%s" "HEAD^{commit}" "--")
-       ("rev-parse" "--verify" "--abbrev-ref" ,(concat main "@{upstream}"))
+     `(("rev-parse" "--verify" "--abbrev-ref" ,(concat main "@{upstream}"))
        ("rev-parse" "--verify" "--abbrev-ref" ,(concat branch "@{upstream}"))
        ("rev-parse" "--verify" "--abbrev-ref" ,(concat push-branch "^{commit}"))
        ("log" "--no-walk" "--format=%s" ,(concat upstream-main"^{commit}") "--")
        ("log" "--no-walk" "--format=%s" ,(concat push-main "^{commit}") "--")
        ("log" "--no-walk" "--format=%s" ,(concat push-branch "^{commit}") "--")
-       ("describe" "--long" "--tags")
-       ("describe" "--contains" "HEAD")
-       ("rev-parse" "--git-dir")
-       ("rev-parse" "--is-bare-repository")
-       ("rev-parse" "--short" "HEAD")
-       ("rev-parse" "--short" "HEAD~")
        ("symbolic-ref" ,(format "refs/remotes/%s/HEAD" primary-remote))
        ("symbolic-ref" ,(format "refs/remotes/%s/HEAD" push-remote))
-       ("describe" "--contains" "HEAD")
-       ("rev-parse" "--verify" "HEAD")
-       ("rev-parse" "--verify" "refs/stash")
-       ("rev-parse" "--verify" "HEAD~10")
        ("rev-parse" "--verify" ,(concat "refs/tags/" branch))
        ("rev-parse" "--verify" ,(concat "refs/tags/" push-branch))
        ("rev-parse" "--verify" ,(concat "refs/tags/" push-main))
@@ -1147,32 +1145,34 @@ window."
   (when (eq (process-status proc) 'exit)
     (let ((buf (process-buffer proc)))
       (when (buffer-live-p buf)
-        (condition-case nil
-            (let ((value
-                   (with-current-buffer buf
-                     (and (= (process-exit-status proc) 0)
-                          (unless (bobp)
-                            (goto-char (point-min))
-                            (buffer-substring-no-properties (point) (line-end-position)))))))
-              ;; (message "Prefill: adding cache %s to %s (%s)" value key mode)
-              (push (cons key value)
-                    (cdr magit--refresh-cache))
-              ;; (when (or (eq mode 'string-p) value)
-              ;;   ;; (message "Prefill: adding cache %s to %s (%s)" value key mode)
-              ;;   (push (cons key value)
-              ;;         (cdr magit--refresh-cache)))
-              )
-          (error nil)))
+        (let ((value
+               (with-current-buffer buf
+                 (and (= (process-exit-status proc) 0)
+                      (unless (bobp)
+                        (goto-char (point-min))
+                        (buffer-substring-no-properties (point) (line-end-position)))))))
+          ;; (message "Prefill: adding cache %s to %s" value key)
+          (push (cons key value)
+                (cdr magit--refresh-cache))
+          ;; (when (or (eq mode 'string-p) value)
+          ;;   ;; (message "Prefill: adding cache %s to %s (%s)" value key mode)
+          ;;   (push (cons key value)
+          ;;         (cdr magit--refresh-cache)))
+          ))
       (kill-buffer buf))))
 
 (defun magit--prefill-caches ()
+  (magit--prefill-caches-with-commands magit--prefill-commands-first-step)
+  (magit--prefill-caches-with-commands (magit--prefill-commands-second-step)))
+
+(defun magit--prefill-caches-with-commands (commands)
   "Prefill the Magit cache with common Git command results."
   (when magit--refresh-cache
     (let ((processes '())
           (time (current-time))
           (repo-path (magit-toplevel)))
       (cl-loop
-       for args in (magit--prefill-commands)
+       for args in commands
        for index from 0
        do
        (let* ((name (format " *magit-prefill-%s*" index))
@@ -1203,8 +1203,7 @@ window."
             (delete-process proc))
           (when (buffer-live-p buf)
             (kill-buffer buf))))
-      (message "cache time: %.06f" (float-time (time-since time)))
-      )))
+      (message "cache time: %.06f" (float-time (time-since time))))))
 
 (defun magit-refresh ()
   "Refresh some buffers belonging to the current repository.
