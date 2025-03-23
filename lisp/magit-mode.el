@@ -1177,12 +1177,9 @@ window."
        do
        (let* ((name (format " *magit-prefill-%s*" index))
               (buffer (get-buffer-create name t))
-              ;; (args (car args-mode))
               (key (cons repo-path args))
-              (args (flatten-tree args)) ; most likely useless
               (process-environment (magit-process-environment))
               (default-process-coding-system (magit--process-coding-system))
-              ;; (mode (cdr args-mode))
               (proc (make-process
                      :name (format "magit-prefill:%s:%s" index (mapconcat #'identity args "-"))
                      :buffer buffer
@@ -1220,10 +1217,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                                         (list (cons 0 0)))))
           (when magit-refresh-verbose
             (message "Refreshing magit..."))
-          ;; (message "----- Start of refresh")
           (magit--prefill-caches)
-          ;; (message "After prefill")
-          ;; (message "Cache after prefill: %s" magit--refresh-cache)
           (magit-run-hook-with-benchmark 'magit-pre-refresh-hook)
           (cond ((derived-mode-p 'magit-mode)
                  (magit-refresh-buffer))
