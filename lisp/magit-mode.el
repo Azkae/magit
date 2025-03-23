@@ -1050,7 +1050,6 @@ window."
        ("rev-parse" "--verify" ,push-branch))
      :test 'equal)))
 
-
 (defun magit--prefill-sentinel (proc key)
   (when (eq (process-status proc) 'exit)
     (let ((buf (process-buffer proc)))
@@ -1102,8 +1101,7 @@ window."
           (when (process-live-p proc)
             (delete-process proc))
           (when (buffer-live-p buf)
-            (kill-buffer buf))))
-      (message "cache time: %.06f" (float-time (time-since time))))))
+            (kill-buffer buf)))))))
 
 (defun magit-refresh ()
   "Refresh some buffers belonging to the current repository.
