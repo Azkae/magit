@@ -355,7 +355,7 @@ what you want, then use `magit-git-string-ng' instead.
 This is an experimental replacement for `magit-git-string', and
 still subject to major changes."
   (magit--with-refresh-cache (cons default-directory args)
- ;;   (message "magit-git-string-p: %s" args)
+   (message "magit-git-string-p: %s" args)
     (magit--with-temp-process-buffer
       (and (zerop (magit-process-git t args))
            (not (bobp))
@@ -375,7 +375,7 @@ This is an experimental replacement for `magit-git-string', and
 still subject to major changes.  Also see `magit-git-string-p'."
   (magit--with-refresh-cache
       (list default-directory 'magit-git-string-ng args)
-  ;;  (message "magit-git-string-ng: %s" args)
+   (message "magit-git-string-ng: %s" args)
     (magit--with-temp-process-buffer
       (let* ((args (magit-process-git-arguments args))
              (status (magit-process-git t args)))
@@ -404,7 +404,7 @@ newline, return an empty string.  Like `magit-git-string' but
 ignore `magit-git-debug'."
   (setq args (flatten-tree args))
   (magit--with-refresh-cache (cons default-directory args)
- ;;   (message "magit-git-str: %s" args)
+   ;; (message "magit-git-str: %s %s" args default-directory)
     (magit--with-temp-process-buffer
       (magit-process-git (list t nil) args)
       (unless (bobp)
@@ -415,7 +415,7 @@ ignore `magit-git-debug'."
   "Execute Git with ARGS, returning its output."
   (setq args (flatten-tree args))
   (magit--with-refresh-cache (cons default-directory args)
- ;;   (message "magit-git-output: %s" args)
+   (message "magit-git-output: %s" args)
     (magit--with-temp-process-buffer
       (magit-process-git (list t nil) args)
       (buffer-substring-no-properties (point-min) (point-max)))))
@@ -448,7 +448,7 @@ a boolean, then raise an error."
   (let ((args (list "config" "--bool" "--default" (if default "true" "false")
                     variable)))
     (magit--with-refresh-cache (cons default-directory args)
-      ;; (message "magit-git-config-p: %s" args)
+      (message "magit-git-config-p: %s" args)
       (magit--with-temp-process-buffer
         (let ((status (magit-process-git t args))
               (output (buffer-substring (point-min) (1- (point-max)))))
@@ -512,7 +512,7 @@ If there is no output, return nil.  If the output begins with a
 newline, return an empty string."
   (setq args (flatten-tree args))
   (magit--with-refresh-cache (cons default-directory args)
-    ;; (message "magit-git-string: %s" args)
+    (message "magit-git-string: %s" args)
     (magit--with-temp-process-buffer
       (apply #'magit-git-insert args)
       (unless (bobp)
