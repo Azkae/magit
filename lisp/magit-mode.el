@@ -1077,7 +1077,6 @@ window."
   "Prefill the Magit cache with common Git command results."
   (when magit--refresh-cache
     (let ((processes '())
-          (time (current-time))
           (repo-path (magit-toplevel)))
       (cl-loop
        for args in commands
