@@ -1098,13 +1098,14 @@ window."
                                  (magit--prefill-sentinel proc key)))))
          (push (cons proc buffer) processes)))
 
-      (sit-for 0.02)
+      (dolist (proc-buf processes)
+        (while (process-live-p (car proc-buf))
+          (sit-for 0.01)))
+      
       (dolist (proc-buf processes)
         (let ((proc (car proc-buf))
               (buf (cdr proc-buf)))
           (while (accept-process-output proc))
-          (when (process-live-p proc)
-            (delete-process proc))
           (when (buffer-live-p buf)
             (kill-buffer buf)))))))
 
