@@ -1123,7 +1123,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                                         (list (cons 0 0)))))
           (when magit-refresh-verbose
             (message "Refreshing magit..."))
-          (when magit-prefill
+          (when (and magit-prefill (not (file-remote-p default-directory)))
             (magit--prefill-caches))
           (magit-run-hook-with-benchmark 'magit-pre-refresh-hook)
           (cond ((derived-mode-p 'magit-mode)
