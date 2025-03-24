@@ -1050,8 +1050,10 @@ window."
        ("symbolic-ref" ,(format "refs/remotes/%s/HEAD" primary-remote))
        ("symbolic-ref" ,(format "refs/remotes/%s/HEAD" push-remote))
        ("rev-parse" "--verify" ,(concat "refs/tags/" branch))
+       ("rev-parse" "--verify" ,(concat "refs/tags/" main))
        ("rev-parse" "--verify" ,(concat "refs/tags/" push-branch))
        ("rev-parse" "--verify" ,(concat "refs/tags/" push-main))
+       ("rev-parse" "--verify" ,(format "refs/tags/%s/HEAD" primary-remote))
        ("rev-parse" "--verify" ,push-branch))
      :test 'equal)))
 
