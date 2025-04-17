@@ -1102,7 +1102,7 @@ window."
       (dolist (proc-buf processes)
         (while (process-live-p (car proc-buf))
           (sit-for 0.01)))
-      
+
       (dolist (proc-buf processes)
         (let ((proc (car proc-buf))
               (buf (cdr proc-buf)))
