@@ -285,7 +285,8 @@ at point, stage the file but not its content."
   (if-let ((s (and (derived-mode-p 'magit-mode)
                    (magit-apply--get-selection)))
            (type (magit-diff-type))
-           (scope (magit-diff-scope)))
+           (scope (magit-diff-scope))
+           (magit--refresh-cache (or magit--refresh-cache (list (cons 0 0)))))
       (pcase (list type scope
                    (magit-apply--ignore-whitespace-p s type scope))
         (`(untracked     ,_  ,_) (magit-stage-untracked intent))
@@ -405,7 +406,8 @@ ignored) files."
   (interactive)
   (when-let ((s (magit-apply--get-selection))
              (type (magit-diff-type))
-             (scope (magit-diff-scope)))
+             (scope (magit-diff-scope))
+             (magit--refresh-cache (or magit--refresh-cache (list (cons 0 0)))))
     (pcase (list type scope
                  (magit-apply--ignore-whitespace-p s type scope))
       (`(untracked     ,_  ,_) (user-error "Cannot unstage untracked changes"))
